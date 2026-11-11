@@ -6,6 +6,7 @@ composeBom = "2024.09.03"
 media3 = "1.4.1"
 room = "2.6.1"
 coil = "2.7.0"
+palette = "1.0.0"
 activityCompose = "1.9.2"
 lifecycle = "2.8.6"
 navigation = "2.8.2"
@@ -31,6 +32,8 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+androidx-palette = { module = "androidx.palette:palette-ktx", version.ref = "palette" }
+androidx-palette-core = { module = "androidx.palette:palette", version.ref = "palette" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
 [plugins]
