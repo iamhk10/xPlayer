@@ -38,6 +38,7 @@ import com.x.player.service.PlayerController
 import com.x.player.service.PlayerState
 import com.x.player.ui.components.Artwork
 import com.x.player.ui.components.EmptyState
+import com.x.player.ui.components.TrackMenu
 import com.x.player.ui.components.TrackRow
 import com.x.player.util.formatCount
 
@@ -48,6 +49,7 @@ fun SearchScreen(
     results: SearchResults,
     state: PlayerState,
     player: PlayerController,
+    menu: TrackMenu,
     onQuery: (String) -> Unit,
     onBack: () -> Unit,
     onAlbum: (Long) -> Unit,
@@ -121,6 +123,7 @@ fun SearchScreen(
                                 onClick = { player.play(results.songs, i) },
                                 onPlayNext = { player.playNext(track) },
                                 onAddToQueue = { player.addToQueue(track) },
+                                menu = menu,
                             )
                         }
                     }

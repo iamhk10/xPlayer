@@ -3,6 +3,7 @@ package com.x.player.ui.screens
 import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,6 +36,7 @@ import com.x.player.service.PlayerController
 import com.x.player.service.PlayerState
 import com.x.player.ui.components.Artwork
 import com.x.player.ui.components.EmptyState
+import com.x.player.ui.components.TrackMenu
 import com.x.player.ui.components.TrackRow
 
 /** Shared by album, artist and folder pages. */
@@ -47,7 +49,10 @@ fun DetailScreen(
     tracks: List<Track>,
     state: PlayerState,
     player: PlayerController,
+    menu: TrackMenu,
     onBack: () -> Unit,
+    onRemove: ((Track) -> Unit)? = null,
+    topActions: @Composable RowScope.() -> Unit = {},
 ) {
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -60,11 +65,12 @@ fun DetailScreen(
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = topActions,
             )
         },
     ) { padding ->
         if (tracks.isEmpty()) {
-            EmptyState("Nothing here", "This list is empty.", Modifier.padding(padding))
+            EmptyState("Nothing here yet", "Add songs from the ⋮ menu on any track.", Modifier.padding(padding))
             return@Scaffold
         }
         LazyColumn(Modifier.padding(padding).fillMaxSize()) {
@@ -107,7 +113,9 @@ fun DetailScreen(
                     onClick = { player.play(tracks, i) },
                     onPlayNext = { player.playNext(track) },
                     onAddToQueue = { player.addToQueue(track) },
+                    menu = menu,
                     showArtwork = false,
+                    onRemove = if (onRemove != null) ({ onRemove(track) }) else null,
                 )
             }
         }

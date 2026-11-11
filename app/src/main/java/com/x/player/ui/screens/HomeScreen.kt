@@ -22,7 +22,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
@@ -37,7 +41,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -54,8 +58,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import com.x.player.domain.Album
 import com.x.player.domain.Artist
+import com.x.player.domain.FAVORITES_ID
 import com.x.player.domain.Folder
 import com.x.player.domain.LibraryIndex
+import com.x.player.domain.Playlist
 import com.x.player.domain.SongSort
 import com.x.player.domain.Track
 import com.x.player.domain.applySort
@@ -63,10 +69,11 @@ import com.x.player.service.PlayerController
 import com.x.player.service.PlayerState
 import com.x.player.ui.components.Artwork
 import com.x.player.ui.components.EmptyState
+import com.x.player.ui.components.TrackMenu
 import com.x.player.ui.components.TrackRow
 import com.x.player.util.formatCount
 
-private val TABS = listOf("Songs", "Albums", "Artists", "Folders")
+private val TABS = listOf("Songs", "Albums", "Artists", "Folders", "Playlists")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,6 +89,12 @@ fun HomeScreen(
     onAlbum: (Long) -> Unit,
     onArtist: (Int) -> Unit,
     onFolder: (Int) -> Unit,
+    favoriteCount: Int,
+    playlists: List<Playlist>,
+    menu: TrackMenu,
+    onPlaylist: (Long) -> Unit,
+    onNewPlaylist: () -> Unit,
+    onDuplicates: () -> Unit,
 ) {
     var tab by rememberSaveable { mutableStateOf(0) }
     var sortMenu by remember { mutableStateOf(false) }
@@ -113,6 +126,9 @@ fun HomeScreen(
                             }
                         }
                     }
+                    IconButton(onClick = onDuplicates) {
+                        Icon(Icons.Rounded.ContentCopy, contentDescription = "Find duplicates")
+                    }
                     IconButton(onClick = onRescan) {
                         Icon(Icons.Rounded.Refresh, contentDescription = "Rescan library")
                     }
@@ -124,8 +140,9 @@ fun HomeScreen(
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
-            TabRow(
+            ScrollableTabRow(
                 selectedTabIndex = tab,
+                edgePadding = 0.dp,
                 containerColor = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.primary,
             ) {
@@ -136,13 +153,15 @@ fun HomeScreen(
             if (scanning) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
             }
-            if (index.tracks.isEmpty()) {
+            if (tab == 4) {
+                PlaylistsTab(index, favoriteCount, playlists, onPlaylist, onNewPlaylist)
+            } else if (index.tracks.isEmpty()) {
                 EmptyState(
                     title = if (scanning) "Scanning your music…" else "No music found",
                     message = if (scanning) "This only takes a moment." else "Songs shorter than 30 seconds are skipped. Tap refresh after adding music.",
                 )
             } else when (tab) {
-                0 -> SongsTab(index.tracks.applySort(sort), state, player)
+                0 -> SongsTab(index.tracks.applySort(sort), state, player, menu)
                 1 -> AlbumsTab(index.albums, onAlbum)
                 2 -> ArtistsTab(index.artists, onArtist)
                 else -> FoldersTab(index.folders, onFolder)
@@ -152,7 +171,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun SongsTab(tracks: List<Track>, state: PlayerState, player: PlayerController) {
+private fun SongsTab(tracks: List<Track>, state: PlayerState, player: PlayerController, menu: TrackMenu) {
     LazyColumn(Modifier.fillMaxSize()) {
         item(key = "shuffle") {
             Row(
@@ -178,7 +197,47 @@ private fun SongsTab(tracks: List<Track>, state: PlayerState, player: PlayerCont
                 onClick = { player.play(tracks, i) },
                 onPlayNext = { player.playNext(track) },
                 onAddToQueue = { player.addToQueue(track) },
+                menu = menu,
             )
+        }
+    }
+}
+
+@Composable
+private fun PlaylistsTab(
+    index: LibraryIndex,
+    favoriteCount: Int,
+    playlists: List<Playlist>,
+    onPlaylist: (Long) -> Unit,
+    onNewPlaylist: () -> Unit,
+) {
+    LazyColumn(Modifier.fillMaxSize()) {
+        item(key = "new") {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onNewPlaylist)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Text("New playlist", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+        item(key = "favorites") {
+            ListRow(
+                title = "Favourites",
+                subtitle = formatCount(favoriteCount, "song"),
+                onClick = { onPlaylist(FAVORITES_ID) },
+            ) { Icon(Icons.Rounded.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+        }
+        items(playlists, key = { "p" + it.id }) { playlist ->
+            ListRow(
+                title = playlist.name,
+                subtitle = formatCount(index.tracksFor(playlist.trackIds).size, "song"),
+                onClick = { onPlaylist(playlist.id) },
+            ) { Icon(Icons.Rounded.LibraryMusic, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
         }
     }
 }
