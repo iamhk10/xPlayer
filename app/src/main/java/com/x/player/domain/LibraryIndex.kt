@@ -5,6 +5,8 @@ import java.io.File
 /** Immutable, pre-grouped view of the whole library. Built off the main thread. */
 class LibraryIndex(val tracks: List<Track> = emptyList()) {
 
+    private val byId: Map<Long, Track> = tracks.associateBy { it.id }
+
     private val byAlbum: Map<Long, List<Track>> = tracks
         .groupBy { it.albumId }
         .mapValues { (_, list) ->
@@ -46,6 +48,9 @@ class LibraryIndex(val tracks: List<Track> = emptyList()) {
             trackCount = list.size,
         )
     }.sortedBy { it.name.lowercase() }
+
+    /** Resolves saved ids to tracks, silently dropping ones that no longer exist. */
+    fun tracksFor(ids: List<Long>): List<Track> = ids.mapNotNull { byId[it] }
 
     fun album(id: Long): Album? = albums.firstOrNull { it.id == id }
     fun artist(key: Int): Artist? = artists.firstOrNull { it.key == key }
