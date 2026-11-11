@@ -3,7 +3,9 @@ package com.x.player.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -15,7 +17,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,9 +43,17 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.x.player.XApp
-import com.x.player.ui.components.EmptyState
+import com.x.player.domain.FAVORITES_ID
+import com.x.player.domain.Track
+import com.x.player.domain.findDuplicates
+import com.x.player.ui.components.AddToPlaylistDialog
+import com.x.player.ui.components.ConfirmDialog
+import com.x.player.ui.components.NameDialog
+import com.x.player.ui.components.TrackMenu
 import com.x.player.ui.components.MiniPlayer
 import com.x.player.ui.screens.DetailScreen
+import com.x.player.ui.screens.DuplicatesScreen
+import com.x.player.ui.screens.EqualizerScreen
 import com.x.player.ui.screens.HomeScreen
 import com.x.player.ui.screens.NowPlayingScreen
 import com.x.player.ui.screens.QueueScreen
@@ -48,6 +63,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
+
+private class PendingNew(val track: Track?)
 
 private val AUDIO_PERMISSION =
     if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
@@ -63,6 +80,26 @@ fun XRoot() {
         mutableStateOf(ContextCompat.checkSelfPermission(context, AUDIO_PERMISSION) == PackageManager.PERMISSION_GRANTED)
     }
     val audioLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
+    val deleteLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
+        vm.rescan()
+    }
+    val deleteTracks: (List<Track>) -> Unit = { tracks ->
+        if (tracks.isNotEmpty()) {
+            if (Build.VERSION.SDK_INT >= 30) {
+                val request = MediaStore.createDeleteRequest(context.contentResolver, tracks.map { it.uri })
+                deleteLauncher.launch(IntentSenderRequest.Builder(request.intentSender).build())
+            } else {
+                tracks.forEach {
+                    try {
+                        context.contentResolver.delete(it.uri, null, null)
+                    } catch (e: Exception) {
+                        // Not allowed to delete this file; leave it.
+                    }
+                }
+                vm.rescan()
+            }
+        }
+    }
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     LaunchedEffect(granted) {
@@ -93,8 +130,21 @@ fun XRoot() {
             val scanning by vm.scanning.collectAsState()
             val query by vm.query.collectAsState()
             val results by vm.results.collectAsState()
+            val favoriteIds by vm.favoriteIds.collectAsState()
+            val playlists by vm.playlists.collectAsState()
             val state by player.state.collectAsState()
             val route = nav.currentBackStackEntryAsState().value?.destination?.route
+
+            var addTarget by remember { mutableStateOf<Track?>(null) }
+            var pendingNew by remember { mutableStateOf<PendingNew?>(null) }
+            val favoriteSet = remember(favoriteIds) { favoriteIds.toSet() }
+            val menu = remember(favoriteSet) {
+                TrackMenu(
+                    favorites = favoriteSet,
+                    onToggleFavorite = { vm.toggleFavorite(it.id) },
+                    onAddToPlaylist = { addTarget = it },
+                )
+            }
 
             Box(Modifier.weight(1f)) {
                 NavHost(navController = nav, startDestination = "home") {
@@ -111,6 +161,12 @@ fun XRoot() {
                             onAlbum = { nav.navigate("album/$it") },
                             onArtist = { nav.navigate("artist/$it") },
                             onFolder = { nav.navigate("folder/$it") },
+                            favoriteCount = index.tracksFor(favoriteIds).size,
+                            playlists = playlists,
+                            menu = menu,
+                            onPlaylist = { nav.navigate("playlist/$it") },
+                            onNewPlaylist = { pendingNew = PendingNew(null) },
+                            onDuplicates = { nav.navigate("duplicates") },
                         )
                     }
                     composable("search") {
@@ -119,6 +175,7 @@ fun XRoot() {
                             results = results,
                             state = state,
                             player = player,
+                            menu = menu,
                             onQuery = vm::setQuery,
                             onBack = { vm.setQuery(""); nav.popBackStack() },
                             onAlbum = { nav.navigate("album/$it") },
@@ -135,6 +192,7 @@ fun XRoot() {
                             tracks = index.albumTracks(id),
                             state = state,
                             player = player,
+                            menu = menu,
                             onBack = { nav.popBackStack() },
                         )
                     }
@@ -148,6 +206,7 @@ fun XRoot() {
                             tracks = index.artistTracks(key),
                             state = state,
                             player = player,
+                            menu = menu,
                             onBack = { nav.popBackStack() },
                         )
                     }
@@ -161,8 +220,68 @@ fun XRoot() {
                             tracks = index.folderTracks(key),
                             state = state,
                             player = player,
+                            menu = menu,
                             onBack = { nav.popBackStack() },
                         )
+                    }
+                    composable("playlist/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
+                        val id = entry.arguments?.getLong("id") ?: 0L
+                        if (id == FAVORITES_ID) {
+                            val tracks = index.tracksFor(favoriteIds)
+                            DetailScreen(
+                                title = "Favourites",
+                                subtitle = formatCount(tracks.size, "song"),
+                                artworkUri = null,
+                                tracks = tracks,
+                                state = state,
+                                player = player,
+                                menu = menu,
+                                onBack = { nav.popBackStack() },
+                                onRemove = { vm.toggleFavorite(it.id) },
+                            )
+                        } else {
+                            val playlist = playlists.firstOrNull { it.id == id }
+                            val tracks = index.tracksFor(playlist?.trackIds.orEmpty())
+                            var renaming by remember { mutableStateOf(false) }
+                            var deleting by remember { mutableStateOf(false) }
+                            DetailScreen(
+                                title = playlist?.name ?: "Playlist",
+                                subtitle = formatCount(tracks.size, "song"),
+                                artworkUri = null,
+                                tracks = tracks,
+                                state = state,
+                                player = player,
+                                menu = menu,
+                                onBack = { nav.popBackStack() },
+                                onRemove = { vm.removeFromPlaylist(id, it.id) },
+                                topActions = {
+                                    IconButton(onClick = { renaming = true }) {
+                                        Icon(Icons.Rounded.Edit, contentDescription = "Rename")
+                                    }
+                                    IconButton(onClick = { deleting = true }) {
+                                        Icon(Icons.Rounded.Delete, contentDescription = "Delete")
+                                    }
+                                },
+                            )
+                            if (renaming) {
+                                NameDialog(
+                                    title = "Rename playlist",
+                                    confirmLabel = "Save",
+                                    initial = playlist?.name.orEmpty(),
+                                    onConfirm = { vm.renamePlaylist(id, it); renaming = false },
+                                    onDismiss = { renaming = false },
+                                )
+                            }
+                            if (deleting) {
+                                ConfirmDialog(
+                                    title = "Delete playlist?",
+                                    message = "The songs themselves stay on your phone.",
+                                    confirmLabel = "Delete",
+                                    onConfirm = { deleting = false; vm.deletePlaylist(id); nav.popBackStack() },
+                                    onDismiss = { deleting = false },
+                                )
+                            }
+                        }
                     }
                     composable(
                         "now",
@@ -174,14 +293,42 @@ fun XRoot() {
                         NowPlayingScreen(
                             state = state,
                             player = player,
+                            isFavorite = state.currentId?.toLongOrNull()?.let { it in favoriteSet } ?: false,
+                            onToggleFavorite = { state.currentId?.toLongOrNull()?.let(vm::toggleFavorite) },
                             onBack = { nav.popBackStack() },
                             onQueue = { nav.navigate("queue") },
+                            onEqualizer = { nav.navigate("eq") },
+                            lyrics = container.lyrics,
                         )
+                    }
+                    composable("duplicates") {
+                        val groups = remember(index) { findDuplicates(index.tracks) }
+                        DuplicatesScreen(groups = groups, onDelete = deleteTracks, onBack = { nav.popBackStack() })
+                    }
+                    composable("eq") {
+                        EqualizerScreen(controller = container.equalizer, onBack = { nav.popBackStack() })
                     }
                     composable("queue") {
                         QueueScreen(state = state, player = player, onBack = { nav.popBackStack() })
                     }
                 }
+            }
+
+            addTarget?.let { track ->
+                AddToPlaylistDialog(
+                    playlists = playlists,
+                    onPick = { vm.addToPlaylist(it.id, track.id); addTarget = null },
+                    onCreate = { pendingNew = PendingNew(track); addTarget = null },
+                    onDismiss = { addTarget = null },
+                )
+            }
+            pendingNew?.let { request ->
+                NameDialog(
+                    title = "New playlist",
+                    confirmLabel = "Create",
+                    onConfirm = { vm.createPlaylist(it, request.track?.id); pendingNew = null },
+                    onDismiss = { pendingNew = null },
+                )
             }
 
             if (state.hasMedia && route != "now") {

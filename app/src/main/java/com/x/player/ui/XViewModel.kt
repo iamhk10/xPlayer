@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.x.player.data.LibraryRepository
 import com.x.player.domain.LibraryIndex
+import com.x.player.domain.Playlist
 import com.x.player.domain.SearchResults
 import com.x.player.domain.SongSort
 import kotlinx.coroutines.FlowPreview
@@ -40,6 +41,40 @@ class XViewModel(private val repository: LibraryRepository) : ViewModel() {
     val results: StateFlow<SearchResults> = combine(index, _query.debounce(150)) { idx, q -> idx.search(q) }
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.Lazily, SearchResults())
+
+    val favoriteIds: StateFlow<List<Long>> = repository.favoriteIds
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val playlists: StateFlow<List<Playlist>> = repository.playlists
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun toggleFavorite(trackId: Long) {
+        viewModelScope.launch { repository.toggleFavorite(trackId) }
+    }
+
+    fun createPlaylist(name: String, firstTrackId: Long? = null) {
+        val clean = name.trim()
+        if (clean.isEmpty()) return
+        viewModelScope.launch { repository.createPlaylist(clean, firstTrackId) }
+    }
+
+    fun renamePlaylist(id: Long, name: String) {
+        val clean = name.trim()
+        if (clean.isEmpty()) return
+        viewModelScope.launch { repository.renamePlaylist(id, clean) }
+    }
+
+    fun deletePlaylist(id: Long) {
+        viewModelScope.launch { repository.deletePlaylist(id) }
+    }
+
+    fun addToPlaylist(playlistId: Long, trackId: Long) {
+        viewModelScope.launch { repository.addToPlaylist(playlistId, trackId) }
+    }
+
+    fun removeFromPlaylist(playlistId: Long, trackId: Long) {
+        viewModelScope.launch { repository.removeFromPlaylist(playlistId, trackId) }
+    }
 
     fun setSort(sort: SongSort) {
         _sort.value = sort
