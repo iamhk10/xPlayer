@@ -18,6 +18,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
@@ -79,6 +83,13 @@ fun Artwork(
     }
 }
 
+/** Favourite / playlist hooks shared by every track list. */
+class TrackMenu(
+    val favorites: Set<Long>,
+    val onToggleFavorite: (Track) -> Unit,
+    val onAddToPlaylist: (Track) -> Unit,
+)
+
 @Composable
 fun TrackRow(
     track: Track,
@@ -86,10 +97,13 @@ fun TrackRow(
     onClick: () -> Unit,
     onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
+    menu: TrackMenu,
     modifier: Modifier = Modifier,
     showArtwork: Boolean = true,
+    onRemove: (() -> Unit)? = null,
 ) {
-    var menu by remember { mutableStateOf(false) }
+    val favorite = track.id in menu.favorites
+    var menuOpen by remember { mutableStateOf(false) }
     val accent = MaterialTheme.colorScheme.primary
     Row(
         modifier = modifier
@@ -125,20 +139,39 @@ fun TrackRow(
             modifier = Modifier.padding(horizontal = 4.dp),
         )
         Box {
-            IconButton(onClick = { menu = true }) {
+            IconButton(onClick = { menuOpen = true }) {
                 Icon(Icons.Rounded.MoreVert, contentDescription = "More")
             }
-            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text("Play next") },
                     leadingIcon = { Icon(Icons.Rounded.SkipNext, contentDescription = null) },
-                    onClick = { menu = false; onPlayNext() },
+                    onClick = { menuOpen = false; onPlayNext() },
                 )
                 DropdownMenuItem(
                     text = { Text("Add to queue") },
                     leadingIcon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-                    onClick = { menu = false; onAddToQueue() },
+                    onClick = { menuOpen = false; onAddToQueue() },
                 )
+                DropdownMenuItem(
+                    text = { Text(if (favorite) "Remove from favourites" else "Add to favourites") },
+                    leadingIcon = {
+                        Icon(if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, contentDescription = null)
+                    },
+                    onClick = { menuOpen = false; menu.onToggleFavorite(track) },
+                )
+                DropdownMenuItem(
+                    text = { Text("Add to playlist") },
+                    leadingIcon = { Icon(Icons.Rounded.LibraryMusic, contentDescription = null) },
+                    onClick = { menuOpen = false; menu.onAddToPlaylist(track) },
+                )
+                if (onRemove != null) {
+                    DropdownMenuItem(
+                        text = { Text("Remove from this list") },
+                        leadingIcon = { Icon(Icons.Rounded.Close, contentDescription = null) },
+                        onClick = { menuOpen = false; onRemove() },
+                    )
+                }
             }
         }
     }
