@@ -20,10 +20,4 @@ class MainActivity : ComponentActivity() {
             XTheme { XRoot() }
         }
     }
-
-    override fun onDestroy() {
-        // Playback continues in PlaybackService; we only drop our controller on a real exit.
-        if (isFinishing) (application as XApp).container.player.disconnect()
-        super.onDestroy()
-    }
 }
