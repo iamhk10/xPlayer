@@ -21,4 +21,11 @@ data class PlayerState(
     val artist: String get() = current?.mediaMetadata?.artist?.toString().orEmpty()
     val album: String get() = current?.mediaMetadata?.albumTitle?.toString().orEmpty()
     val artworkUri: Uri? get() = current?.mediaMetadata?.artworkUri
+    val path: String get() = current?.mediaMetadata?.extras?.getString(EXTRA_PATH).orEmpty()
 }
+
+/** Active sleep timer. [remainingMs] is meaningless when [endOfSong] is true. */
+data class SleepTimerState(
+    val remainingMs: Long = 0L,
+    val endOfSong: Boolean = false,
+)

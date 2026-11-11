@@ -5,11 +5,13 @@ import android.content.Intent
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.x.player.MainActivity
+import com.x.player.XApp
 
 /**
  * Owns the ExoPlayer and the MediaSession. Media3 builds the notification, lock-screen
@@ -34,6 +36,14 @@ class PlaybackService : MediaSessionService() {
             .setWakeMode(C.WAKE_MODE_LOCAL)
             .build()
 
+        val equalizer = (application as XApp).container.equalizer
+        equalizer.attach(player.audioSessionId)
+        player.addListener(object : Player.Listener {
+            override fun onAudioSessionIdChanged(audioSessionId: Int) {
+                equalizer.attach(audioSessionId)
+            }
+        })
+
         val openApp = PendingIntent.getActivity(
             this,
             0,
@@ -57,6 +67,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        (application as XApp).container.equalizer.release()
         session?.run {
             player.release()
             release()

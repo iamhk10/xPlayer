@@ -33,12 +33,30 @@ class PlayerController(private val context: Context) {
     private var future: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
     private var ticker: Job? = null
+    private var sleepJob: Job? = null
+    private var sleepEndOfSong = false
+
+    private val _sleep = MutableStateFlow<SleepTimerState?>(null)
+    val sleep: StateFlow<SleepTimerState?> = _sleep.asStateFlow()
     private val pending = ArrayList<(MediaController) -> Unit>()
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
             refresh()
             updateTicker()
+            if (sleepEndOfSong && player.playbackState == Player.STATE_ENDED) cancelSleepTimer()
+        }
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            val songEnded = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT
+            if (sleepEndOfSong && songEnded) {
+                controller?.let {
+                    it.pause()
+                    it.seekTo(0L)
+                }
+                cancelSleepTimer()
+            }
         }
     }
 
@@ -65,6 +83,7 @@ class PlayerController(private val context: Context) {
 
     fun disconnect() {
         ticker?.cancel()
+        cancelSleepTimer()
         controller?.removeListener(listener)
         future?.let { MediaController.releaseFuture(it) }
         future = null
@@ -169,6 +188,38 @@ class PlayerController(private val context: Context) {
 
     fun removeFromQueue(index: Int) = withController { c ->
         if (index in 0 until c.mediaItemCount) c.removeMediaItem(index)
+    }
+
+    // ---- sleep timer ------------------------------------------------------------------------
+
+    fun startSleepTimer(minutes: Int) {
+        cancelSleepTimer()
+        val endAt = System.currentTimeMillis() + minutes * 60_000L
+        sleepJob = scope.launch {
+            while (isActive) {
+                val left = endAt - System.currentTimeMillis()
+                if (left <= 0L) {
+                    controller?.pause()
+                    _sleep.value = null
+                    break
+                }
+                _sleep.value = SleepTimerState(remainingMs = left)
+                delay(1000)
+            }
+        }
+    }
+
+    fun sleepAtEndOfSong() {
+        cancelSleepTimer()
+        sleepEndOfSong = true
+        _sleep.value = SleepTimerState(endOfSong = true)
+    }
+
+    fun cancelSleepTimer() {
+        sleepJob?.cancel()
+        sleepJob = null
+        sleepEndOfSong = false
+        _sleep.value = null
     }
 
     fun toggleShuffle() = withController { it.shuffleModeEnabled = !it.shuffleModeEnabled }
