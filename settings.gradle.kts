@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "X"
+rootProject.name = "xPlayer"
 include(":app")

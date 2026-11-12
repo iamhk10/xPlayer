@@ -10,3 +10,6 @@
 .cxx/
 *.apk
 *.aab
+
+# the shared debug key is committed on purpose
+!app/xplayer-debug.keystore
