@@ -23,10 +23,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
@@ -95,16 +98,19 @@ fun HomeScreen(
     onPlaylist: (Long) -> Unit,
     onNewPlaylist: () -> Unit,
     onDuplicates: () -> Unit,
+    onStats: () -> Unit,
+    onAbout: () -> Unit,
 ) {
     var tab by rememberSaveable { mutableStateOf(0) }
     var sortMenu by remember { mutableStateOf(false) }
+    var moreMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("X", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary) },
+                title = { Text("xPlayer", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary) },
                 actions = {
                     if (tab == 0) {
                         Box {
@@ -126,14 +132,35 @@ fun HomeScreen(
                             }
                         }
                     }
-                    IconButton(onClick = onDuplicates) {
-                        Icon(Icons.Rounded.ContentCopy, contentDescription = "Find duplicates")
-                    }
-                    IconButton(onClick = onRescan) {
-                        Icon(Icons.Rounded.Refresh, contentDescription = "Rescan library")
-                    }
                     IconButton(onClick = onSearch) {
                         Icon(Icons.Rounded.Search, contentDescription = "Search")
+                    }
+                    Box {
+                        IconButton(onClick = { moreMenu = true }) {
+                            Icon(Icons.Rounded.MoreVert, contentDescription = "More")
+                        }
+                        DropdownMenu(expanded = moreMenu, onDismissRequest = { moreMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Listening stats") },
+                                leadingIcon = { Icon(Icons.Rounded.BarChart, contentDescription = null) },
+                                onClick = { moreMenu = false; onStats() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Find duplicates") },
+                                leadingIcon = { Icon(Icons.Rounded.ContentCopy, contentDescription = null) },
+                                onClick = { moreMenu = false; onDuplicates() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Rescan library") },
+                                leadingIcon = { Icon(Icons.Rounded.Refresh, contentDescription = null) },
+                                onClick = { moreMenu = false; onRescan() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("About xPlayer") },
+                                leadingIcon = { Icon(Icons.Rounded.Info, contentDescription = null) },
+                                onClick = { moreMenu = false; onAbout() },
+                            )
+                        }
                     }
                 },
             )
