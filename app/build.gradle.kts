@@ -13,13 +13,27 @@ android {
         applicationId = "com.x.player"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
-        // Output file becomes X-debug.apk
-        setProperty("archivesBaseName", "X")
+        versionCode = 2
+        versionName = "0.2.0"
+        // Output file becomes xPlayer-debug.apk
+        setProperty("archivesBaseName", "xPlayer")
+    }
+
+    // One fixed debug key, committed to the repo, so every CI build is signed the same way and
+    // a new APK installs over the old one without losing playlists, favourites or stats.
+    signingConfigs {
+        create("shared") {
+            storeFile = file("xplayer-debug.keystore")
+            storePassword = "xplayer123"
+            keyAlias = "xplayer"
+            keyPassword = "xplayer123"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("shared")
+        }
         release {
             isMinifyEnabled = false
         }
