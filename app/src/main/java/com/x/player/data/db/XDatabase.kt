@@ -62,17 +62,31 @@ interface PlaylistDao {
     suspend fun removeFromPlaylist(playlistId: Long, trackId: Long)
 }
 
+@Dao
+interface PlayLogDao {
+    @Insert
+    suspend fun insert(item: PlayLogEntity)
+
+    @Query("SELECT COALESCE(SUM(playCount), 0) AS plays, COALESCE(SUM(listenedMs), 0) AS ms FROM play_log WHERE playedAt >= :since")
+    fun observeSince(since: Long): Flow<StatsRow>
+
+    @Query("SELECT trackId AS trackId, SUM(playCount) AS plays FROM play_log GROUP BY trackId HAVING SUM(playCount) > 0 ORDER BY SUM(playCount) DESC LIMIT 10")
+    fun observeTop(): Flow<List<TopRow>>
+}
+
 @Database(
     entities = [
         TrackEntity::class,
         FavoriteEntity::class,
         PlaylistEntity::class,
         PlaylistTrackEntity::class,
+        PlayLogEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class XDatabase : RoomDatabase() {
     abstract fun trackDao(): TrackDao
     abstract fun playlistDao(): PlaylistDao
+    abstract fun playLogDao(): PlayLogDao
 }
