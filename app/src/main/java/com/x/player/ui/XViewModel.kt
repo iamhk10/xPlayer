@@ -4,12 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.x.player.data.LibraryRepository
+import com.x.player.data.db.StatsRow
+import com.x.player.data.db.TopRow
 import com.x.player.domain.LibraryIndex
 import com.x.player.domain.Playlist
 import com.x.player.domain.SearchResults
 import com.x.player.domain.SongSort
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -75,6 +78,11 @@ class XViewModel(private val repository: LibraryRepository) : ViewModel() {
     fun removeFromPlaylist(playlistId: Long, trackId: Long) {
         viewModelScope.launch { repository.removeFromPlaylist(playlistId, trackId) }
     }
+
+    val topTracks: StateFlow<List<TopRow>> = repository.topTracks()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun statsSince(since: Long): Flow<StatsRow> = repository.statsSince(since)
 
     fun setSort(sort: SongSort) {
         _sort.value = sort

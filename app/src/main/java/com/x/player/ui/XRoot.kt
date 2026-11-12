@@ -51,6 +51,7 @@ import com.x.player.ui.components.ConfirmDialog
 import com.x.player.ui.components.NameDialog
 import com.x.player.ui.components.TrackMenu
 import com.x.player.ui.components.MiniPlayer
+import com.x.player.ui.screens.AboutScreen
 import com.x.player.ui.screens.DetailScreen
 import com.x.player.ui.screens.DuplicatesScreen
 import com.x.player.ui.screens.EqualizerScreen
@@ -58,6 +59,7 @@ import com.x.player.ui.screens.HomeScreen
 import com.x.player.ui.screens.NowPlayingScreen
 import com.x.player.ui.screens.QueueScreen
 import com.x.player.ui.screens.SearchScreen
+import com.x.player.ui.screens.StatsScreen
 import com.x.player.util.formatCount
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
@@ -167,6 +169,8 @@ fun XRoot() {
                             onPlaylist = { nav.navigate("playlist/$it") },
                             onNewPlaylist = { pendingNew = PendingNew(null) },
                             onDuplicates = { nav.navigate("duplicates") },
+                            onStats = { nav.navigate("stats") },
+                            onAbout = { nav.navigate("about") },
                         )
                     }
                     composable("search") {
@@ -295,6 +299,11 @@ fun XRoot() {
                             player = player,
                             isFavorite = state.currentId?.toLongOrNull()?.let { it in favoriteSet } ?: false,
                             onToggleFavorite = { state.currentId?.toLongOrNull()?.let(vm::toggleFavorite) },
+                            onAddToPlaylist = {
+                                state.currentId?.toLongOrNull()?.let { id ->
+                                    index.tracksFor(listOf(id)).firstOrNull()?.let { addTarget = it }
+                                }
+                            },
                             onBack = { nav.popBackStack() },
                             onQueue = { nav.navigate("queue") },
                             onEqualizer = { nav.navigate("eq") },
@@ -304,6 +313,12 @@ fun XRoot() {
                     composable("duplicates") {
                         val groups = remember(index) { findDuplicates(index.tracks) }
                         DuplicatesScreen(groups = groups, onDelete = deleteTracks, onBack = { nav.popBackStack() })
+                    }
+                    composable("stats") {
+                        StatsScreen(vm = vm, index = index, onBack = { nav.popBackStack() })
+                    }
+                    composable("about") {
+                        AboutScreen(onBack = { nav.popBackStack() })
                     }
                     composable("eq") {
                         EqualizerScreen(controller = container.equalizer, onBack = { nav.popBackStack() })
@@ -353,10 +368,10 @@ private fun PermissionScreen(onGrant: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
     ) {
-        Text("X", style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.primary)
+        Text("xPlayer", style = MaterialTheme.typography.displayMedium, color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.padding(top = 12.dp))
         Text(
-            "X plays the music already on your phone. It needs permission to read your audio files. Nothing ever leaves your device.",
+            "xPlayer plays the music already on your phone. It needs permission to read your audio files. Nothing ever leaves your device.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
