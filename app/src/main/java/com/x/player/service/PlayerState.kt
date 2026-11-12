@@ -21,6 +21,7 @@ data class PlayerState(
     val artist: String get() = current?.mediaMetadata?.artist?.toString().orEmpty()
     val album: String get() = current?.mediaMetadata?.albumTitle?.toString().orEmpty()
     val artworkUri: Uri? get() = current?.mediaMetadata?.artworkUri
+    val sizeBytes: Long get() = current?.mediaMetadata?.extras?.getLong(EXTRA_SIZE, 0L) ?: 0L
     val path: String get() = current?.mediaMetadata?.extras?.getString(EXTRA_PATH).orEmpty()
 }
 

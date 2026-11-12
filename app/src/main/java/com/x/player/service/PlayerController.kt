@@ -2,6 +2,7 @@ package com.x.player.service
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -24,7 +25,10 @@ import kotlinx.coroutines.launch
  * UI-facing wrapper around a Media3 [MediaController] connected to [PlaybackService].
  * All calls must happen on the main thread.
  */
-class PlayerController(private val context: Context) {
+class PlayerController(
+    private val context: Context,
+    private val recorder: PlayRecorder,
+) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val _state = MutableStateFlow(PlayerState())
@@ -40,14 +44,55 @@ class PlayerController(private val context: Context) {
     val sleep: StateFlow<SleepTimerState?> = _sleep.asStateFlow()
     private val pending = ArrayList<(MediaController) -> Unit>()
 
+    // ---- listening stats --------------------------------------------------------------------
+    private var trackedId: Long? = null
+    private var trackedMs = 0L
+    private var unflushedMs = 0L
+    private var countedPlay = false
+    private var lastTick = 0L
+
+    private fun startTracking(item: MediaItem?) {
+        trackedId = item?.mediaId?.toLongOrNull()
+        trackedMs = 0L
+        unflushedMs = 0L
+        countedPlay = false
+        lastTick = SystemClock.elapsedRealtime()
+    }
+
+    private fun accountTick() {
+        val now = SystemClock.elapsedRealtime()
+        if (controller?.isPlaying == true) {
+            val delta = (now - lastTick).coerceIn(0L, 2_000L)
+            trackedMs += delta
+            unflushedMs += delta
+            val id = trackedId
+            if (!countedPlay && id != null && trackedMs >= PLAY_THRESHOLD_MS) {
+                countedPlay = true
+                recorder.played(id)
+            }
+        }
+        lastTick = now
+    }
+
+    private fun flushListening() {
+        val id = trackedId
+        if (id != null && unflushedMs >= 1_000L) {
+            recorder.listened(id, unflushedMs)
+            unflushedMs = 0L
+        }
+    }
+
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
             refresh()
             updateTicker()
+            if (!player.isPlaying) flushListening()
             if (sleepEndOfSong && player.playbackState == Player.STATE_ENDED) cancelSleepTimer()
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            flushListening()
+            startTracking(mediaItem)
             val songEnded = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
                 reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT
             if (sleepEndOfSong && songEnded) {
@@ -77,11 +122,13 @@ class PlayerController(private val context: Context) {
             pending.forEach { it(c) }
             pending.clear()
             refresh()
+            startTracking(c.currentMediaItem)
             updateTicker()
         }, ContextCompat.getMainExecutor(context))
     }
 
     fun disconnect() {
+        flushListening()
         ticker?.cancel()
         cancelSleepTimer()
         controller?.removeListener(listener)
@@ -122,10 +169,13 @@ class PlayerController(private val context: Context) {
         val playing = controller?.isPlaying == true
         if (playing && ticker?.isActive != true) {
             ticker = scope.launch {
+                lastTick = SystemClock.elapsedRealtime()
                 while (isActive) {
                     val c = controller ?: break
                     _state.value = _state.value.copy(positionMs = c.currentPosition.coerceAtLeast(0L))
                     delay(400)
+                    accountTick()
+                    if (unflushedMs >= 60_000L) flushListening()
                 }
             }
         } else if (!playing) {
@@ -230,5 +280,10 @@ class PlayerController(private val context: Context) {
             Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
             else -> Player.REPEAT_MODE_OFF
         }
+    }
+
+    private companion object {
+        /** A song counts as "played" after this much real listening. */
+        const val PLAY_THRESHOLD_MS = 30_000L
     }
 }
