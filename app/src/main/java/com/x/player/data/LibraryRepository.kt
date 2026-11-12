@@ -2,8 +2,11 @@ package com.x.player.data
 
 import androidx.room.withTransaction
 import com.x.player.data.db.FavoriteEntity
+import com.x.player.data.db.PlayLogEntity
 import com.x.player.data.db.PlaylistEntity
 import com.x.player.data.db.PlaylistTrackEntity
+import com.x.player.data.db.StatsRow
+import com.x.player.data.db.TopRow
 import com.x.player.data.db.XDatabase
 import com.x.player.data.db.toTrack
 import com.x.player.domain.Playlist
@@ -20,6 +23,7 @@ class LibraryRepository(
 ) {
     private val dao = db.trackDao()
     private val pdao = db.playlistDao()
+    private val logDao = db.playLogDao()
 
     val tracks: Flow<List<Track>> = dao.observeAll().map { list -> list.map { it.toTrack() } }
 
@@ -42,6 +46,18 @@ class LibraryRepository(
         }
         found.size
     }
+
+    suspend fun logPlay(trackId: Long) {
+        logDao.insert(PlayLogEntity(trackId = trackId, playedAt = System.currentTimeMillis(), playCount = 1, listenedMs = 0L))
+    }
+
+    suspend fun logListening(trackId: Long, ms: Long) {
+        logDao.insert(PlayLogEntity(trackId = trackId, playedAt = System.currentTimeMillis(), playCount = 0, listenedMs = ms))
+    }
+
+    fun statsSince(since: Long): Flow<StatsRow> = logDao.observeSince(since)
+
+    fun topTracks(): Flow<List<TopRow>> = logDao.observeTop()
 
     suspend fun toggleFavorite(trackId: Long) {
         if (pdao.favoriteCount(trackId) > 0) {
