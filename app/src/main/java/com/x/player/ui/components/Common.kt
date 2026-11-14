@@ -101,19 +101,30 @@ fun TrackRow(
     modifier: Modifier = Modifier,
     showArtwork: Boolean = true,
     onRemove: (() -> Unit)? = null,
+    card: Boolean = false,
 ) {
     val favorite = track.id in menu.favorites
     var menuOpen by remember { mutableStateOf(false) }
     val accent = MaterialTheme.colorScheme.primary
+    val cardShape = RoundedCornerShape(18.dp)
+    val cardLook = if (card) {
+        Modifier
+            .padding(horizontal = 14.dp, vertical = 3.dp)
+            .clip(cardShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f), cardShape)
+    } else {
+        Modifier
+    }
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .then(cardLook)
             .clickable(onClick = onClick)
-            .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+            .padding(start = if (card) 10.dp else 16.dp, end = 4.dp, top = if (card) 8.dp else 6.dp, bottom = if (card) 8.dp else 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (showArtwork) {
-            Artwork(track.artworkUri, Modifier.size(48.dp))
+            Artwork(track.artworkUri, Modifier.size(if (card) 52.dp else 48.dp), corner = if (card) 12.dp else 8.dp)
             Spacer(Modifier.width(12.dp))
         }
         Column(Modifier.weight(1f)) {
@@ -171,66 +182,6 @@ fun TrackRow(
                         leadingIcon = { Icon(Icons.Rounded.Close, contentDescription = null) },
                         onClick = { menuOpen = false; onRemove() },
                     )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun MiniPlayer(
-    state: PlayerState,
-    onOpen: () -> Unit,
-    onToggle: () -> Unit,
-    onNext: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-    ) {
-        Column {
-            val progress = if (state.durationMs > 0) state.positionMs.toFloat() / state.durationMs else 0f
-            LinearProgressIndicator(
-                progress = { progress.coerceIn(0f, 1f) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(2.dp),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onOpen)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Artwork(state.artworkUri, Modifier.size(44.dp))
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        state.title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        state.artist,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                IconButton(onClick = onToggle) {
-                    Icon(
-                        if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                        contentDescription = if (state.isPlaying) "Pause" else "Play",
-                    )
-                }
-                IconButton(onClick = onNext) {
-                    Icon(Icons.Rounded.SkipNext, contentDescription = "Next")
                 }
             }
         }

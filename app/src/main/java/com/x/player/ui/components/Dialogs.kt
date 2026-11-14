@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -27,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.x.player.domain.KIND_FOLDER
 import com.x.player.domain.Playlist
 
 /** Single text-field dialog used for "New playlist" and "Rename". */
@@ -85,7 +87,7 @@ fun AddToPlaylistDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add to playlist") },
+        title = { Text("Add to playlist or folder") },
         text = {
             Column {
                 Row(
@@ -108,7 +110,10 @@ fun AddToPlaylistDialog(
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(Icons.Rounded.LibraryMusic, contentDescription = null)
+                            Icon(
+                                if (playlist.kind == KIND_FOLDER) Icons.Rounded.Folder else Icons.Rounded.LibraryMusic,
+                                contentDescription = null,
+                            )
                             Spacer(Modifier.width(12.dp))
                             Text(playlist.name)
                         }
