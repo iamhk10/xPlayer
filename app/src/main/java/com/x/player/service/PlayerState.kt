@@ -10,7 +10,6 @@ data class PlayerState(
     val queue: List<MediaItem> = emptyList(),
     val currentIndex: Int = -1,
     val isPlaying: Boolean = false,
-    val positionMs: Long = 0L,
     val durationMs: Long = 0L,
     val shuffle: Boolean = false,
     val repeat: Int = Player.REPEAT_MODE_OFF,

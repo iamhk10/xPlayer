@@ -34,6 +34,10 @@ class PlayerController(
     private val _state = MutableStateFlow(PlayerState())
     val state: StateFlow<PlayerState> = _state.asStateFlow()
 
+    /** Playback position lives in its own flow so lists and screens do not recompose on every tick. */
+    private val _position = MutableStateFlow(0L)
+    val position: StateFlow<Long> = _position.asStateFlow()
+
     private var future: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
     private var ticker: Job? = null
@@ -136,6 +140,7 @@ class PlayerController(
         future = null
         controller = null
         _state.value = PlayerState()
+        _position.value = 0L
     }
 
     private fun withController(block: (MediaController) -> Unit) {
@@ -152,13 +157,13 @@ class PlayerController(
         for (i in 0 until c.mediaItemCount) items.add(c.getMediaItemAt(i))
         val extraDuration = c.currentMediaItem?.mediaMetadata?.extras?.getLong(EXTRA_DURATION, 0L) ?: 0L
         val duration = if (c.duration > 0) c.duration else extraDuration
+        _position.value = c.currentPosition.coerceAtLeast(0L)
         _state.value = PlayerState(
             connected = true,
             current = c.currentMediaItem,
             queue = items,
             currentIndex = c.currentMediaItemIndex,
             isPlaying = c.isPlaying,
-            positionMs = c.currentPosition.coerceAtLeast(0L),
             durationMs = duration.coerceAtLeast(0L),
             shuffle = c.shuffleModeEnabled,
             repeat = c.repeatMode,
@@ -172,7 +177,7 @@ class PlayerController(
                 lastTick = SystemClock.elapsedRealtime()
                 while (isActive) {
                     val c = controller ?: break
-                    _state.value = _state.value.copy(positionMs = c.currentPosition.coerceAtLeast(0L))
+                    _position.value = c.currentPosition.coerceAtLeast(0L)
                     delay(400)
                     accountTick()
                     if (unflushedMs >= 60_000L) flushListening()
@@ -226,7 +231,7 @@ class PlayerController(
 
     fun seekTo(positionMs: Long) = withController { c ->
         c.seekTo(positionMs)
-        _state.value = _state.value.copy(positionMs = positionMs)
+        _position.value = positionMs
     }
 
     fun skipTo(index: Int) = withController { c ->
