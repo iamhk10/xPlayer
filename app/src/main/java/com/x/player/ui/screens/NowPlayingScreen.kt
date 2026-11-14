@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -45,6 +46,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +62,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import com.x.player.ui.theme.LocalIsDark
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -117,7 +122,21 @@ fun NowPlayingScreen(
     }
 
     // Colours: tint the whole screen with the artwork colour.
-    val bg = MaterialTheme.colorScheme.background
+    // This screen is always dark, whatever the app theme is, so white text stays readable.
+    val bg = Color(0xFF0B0B12)
+    val position by player.position.collectAsState()
+    val themeIsDark = LocalIsDark.current
+    val view = LocalView.current
+    DisposableEffect(Unit) {
+        val window = (view.context as? android.app.Activity)?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
+        controller?.isAppearanceLightStatusBars = false
+        controller?.isAppearanceLightNavigationBars = false
+        onDispose {
+            controller?.isAppearanceLightStatusBars = !themeIsDark
+            controller?.isAppearanceLightNavigationBars = !themeIsDark
+        }
+    }
     val artColor = rememberArtworkColor(state.artworkUri)
     val fallback = lerp(bg, MaterialTheme.colorScheme.primary, 0.20f)
     val tint by animateColorAsState(
@@ -128,9 +147,9 @@ fun NowPlayingScreen(
     val soft = Color.White.copy(alpha = 0.72f)
 
     val duration = state.durationMs.coerceAtLeast(1L)
-    val fraction = (state.positionMs.toFloat() / duration).coerceIn(0f, 1f)
+    val fraction = (position.toFloat() / duration).coerceIn(0f, 1f)
     val shownPosition = ((preview ?: fraction) * duration).toLong()
-    val currentLine = lyricLines.lastOrNull { it.timeMs <= state.positionMs }?.text?.takeIf { it.isNotBlank() }
+    val currentLine = lyricLines.lastOrNull { it.timeMs <= position }?.text?.takeIf { it.isNotBlank() }
     val badge = remember(state.path, state.sizeBytes, state.durationMs) {
         val ext = state.path.substringAfterLast('.', "").uppercase()
         val kbps = if (state.durationMs > 0 && state.sizeBytes > 0) (state.sizeBytes * 8L / state.durationMs).toInt() else 0
@@ -149,7 +168,7 @@ fun NowPlayingScreen(
                 ) {
                     LyricsPanel(
                         lines = lyricLines,
-                        positionMs = state.positionMs,
+                        positionMs = position,
                         accent = Color.White,
                         onSeek = { player.seekTo(it) },
                         onPick = { lrcPicker.launch(arrayOf("*/*")) },
@@ -211,6 +230,7 @@ fun NowPlayingScreen(
             Modifier
                 .fillMaxWidth()
                 .background(Brush.verticalGradient(listOf(tint, darker)))
+                .navigationBarsPadding()
                 .padding(horizontal = 24.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
