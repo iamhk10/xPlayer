@@ -3,8 +3,12 @@ name: Build xPlayer APK
 on:
   push:
     branches: [ main, master ]
+    tags: [ 'v*' ]
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -36,3 +40,10 @@ jobs:
           name: xPlayer-apk
           path: xPlayer.apk
           if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: xPlayer.apk
+          generate_release_notes: true
