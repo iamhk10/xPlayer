@@ -70,6 +70,9 @@ interface PlayLogDao {
     @Query("SELECT COALESCE(SUM(playCount), 0) AS plays, COALESCE(SUM(listenedMs), 0) AS ms FROM play_log WHERE playedAt >= :since")
     fun observeSince(since: Long): Flow<StatsRow>
 
+    @Query("SELECT trackId FROM play_log GROUP BY trackId ORDER BY MAX(playedAt) DESC LIMIT 30")
+    fun observeRecent(): Flow<List<Long>>
+
     @Query("SELECT trackId AS trackId, SUM(playCount) AS plays FROM play_log GROUP BY trackId HAVING SUM(playCount) > 0 ORDER BY SUM(playCount) DESC LIMIT 10")
     fun observeTop(): Flow<List<TopRow>>
 }
@@ -82,7 +85,7 @@ interface PlayLogDao {
         PlaylistTrackEntity::class,
         PlayLogEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class XDatabase : RoomDatabase() {
