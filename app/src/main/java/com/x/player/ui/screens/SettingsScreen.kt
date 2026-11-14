@@ -2,6 +2,8 @@ package com.x.player.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,8 +24,10 @@ import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.BlurOn
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -44,12 +49,14 @@ fun SettingsScreen(
     settings: AppSettings,
     trackCount: Int,
     scanning: Boolean,
+    speedLabel: String,
     onChange: ((AppSettings) -> AppSettings) -> Unit,
     onBack: () -> Unit,
     onTheme: () -> Unit,
     onStats: () -> Unit,
     onEqualizer: () -> Unit,
     onSleep: () -> Unit,
+    onSpeed: () -> Unit,
     onDuplicates: () -> Unit,
     onRescan: () -> Unit,
     onAbout: () -> Unit,
@@ -57,13 +64,45 @@ fun SettingsScreen(
     ScreenFrame(title = "Settings", onBack = onBack) {
         SectionLabel("Appearance")
         Card {
-            NavRow(Icons.Rounded.Palette, "Theme & colours", settings.themeMode.label + " · tap to change", onTheme)
+            NavRow(Icons.Rounded.Palette, "Theme, colours & fonts", settings.themeMode.label + " · " + settings.fontOption.label + " font", onTheme)
             SwitchRow(
                 icon = Icons.Rounded.BlurOn,
                 title = "Liquid glass",
                 subtitle = "Translucent nav bar, mini player and buttons",
                 checked = settings.glass,
                 onChecked = { v -> onChange { it.copy(glass = v) } },
+            )
+        }
+
+        SectionLabel("Start screen")
+        Card {
+            Text(
+                "Open the app on",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+            )
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                MAIN_TABS.forEachIndexed { i, tab ->
+                    FilterChip(
+                        selected = settings.startTab == i,
+                        onClick = { onChange { it.copy(startTab = i) } },
+                        label = { Text(tab.label) },
+                    )
+                }
+            }
+            SwitchRow(
+                icon = null,
+                title = "Keep screen on in Now Playing",
+                subtitle = "Handy for lyrics",
+                checked = settings.keepScreenOn,
+                onChecked = { v -> onChange { it.copy(keepScreenOn = v) } },
             )
         }
 
@@ -92,6 +131,7 @@ fun SettingsScreen(
         Card {
             NavRow(Icons.Rounded.Equalizer, "Equalizer", "5-band with presets", onEqualizer)
             NavRow(Icons.Rounded.Timer, "Sleep timer", "Stop the music after a while", onSleep)
+            NavRow(Icons.Rounded.Speed, "Playback speed", speedLabel, onSpeed)
             NavRow(Icons.Rounded.BarChart, "Listening stats", "How much you listened", onStats)
         }
 

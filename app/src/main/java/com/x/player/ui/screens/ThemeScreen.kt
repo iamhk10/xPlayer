@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,11 +36,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.x.player.data.AppSettings
+import com.x.player.data.FontOption
+import com.x.player.data.TextSize
 import com.x.player.data.ThemeMode
 import com.x.player.ui.components.GlassSurface
 import com.x.player.ui.components.ScreenFrame
 import com.x.player.ui.components.SectionLabel
 import com.x.player.ui.theme.ACCENTS
+import com.x.player.ui.theme.fontFamilyFor
 import com.x.player.ui.theme.onColorFor
 
 private enum class ColourSource { ART, WALLPAPER, CUSTOM }
@@ -119,6 +123,45 @@ fun ThemeScreen(
                 }
             }
         }
+
+        SectionLabel("Font style")
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FontOption.values().forEach { option ->
+                val family = remember(option) { fontFamilyFor(option) }
+                FilterChip(
+                    selected = settings.fontOption == option,
+                    onClick = { onChange { it.copy(fontOption = option) } },
+                    label = { Text(option.label, fontFamily = family) },
+                )
+            }
+        }
+        SectionLabel("Text size")
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TextSize.values().forEach { size ->
+                FilterChip(
+                    selected = settings.textSize == size,
+                    onClick = { onChange { it.copy(textSize = size) } },
+                    label = { Text(size.label) },
+                )
+            }
+        }
+        Text(
+            "The quick brown fox jumps over the lazy dog",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+        )
 
         SectionLabel("Liquid glass")
         val cardShape = RoundedCornerShape(22.dp)

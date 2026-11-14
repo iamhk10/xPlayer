@@ -97,6 +97,7 @@ fun NowPlayingScreen(
     onQueue: () -> Unit,
     onEqualizer: () -> Unit,
     lyrics: LyricsRepository,
+    keepScreenOn: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -136,6 +137,10 @@ fun NowPlayingScreen(
             controller?.isAppearanceLightStatusBars = !themeIsDark
             controller?.isAppearanceLightNavigationBars = !themeIsDark
         }
+    }
+    DisposableEffect(keepScreenOn) {
+        view.keepScreenOn = keepScreenOn
+        onDispose { view.keepScreenOn = false }
     }
     val artColor = rememberArtworkColor(state.artworkUri)
     val fallback = lerp(bg, MaterialTheme.colorScheme.primary, 0.20f)

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material3.FilledTonalButton
@@ -57,6 +58,7 @@ fun HubScreen(
     deviceFolderCount: Int,
     folders: List<Playlist>,
     sleepActive: Boolean,
+    speedLabel: String,
     scanning: Boolean,
     onBack: () -> Unit,
     onFavorites: () -> Unit,
@@ -68,6 +70,7 @@ fun HubScreen(
     onStats: () -> Unit,
     onEqualizer: () -> Unit,
     onSleep: () -> Unit,
+    onSpeed: () -> Unit,
     onDuplicates: () -> Unit,
     onRescan: () -> Unit,
 ) {
@@ -80,6 +83,7 @@ fun HubScreen(
         HubTile(Icons.Rounded.BarChart, "Listening stats", "Day, week, month, year", onStats),
         HubTile(Icons.Rounded.Equalizer, "Equalizer", "5-band and presets", onEqualizer),
         HubTile(Icons.Rounded.Timer, "Sleep timer", if (sleepActive) "Running" else "Off", onSleep),
+        HubTile(Icons.Rounded.Speed, "Playback speed", speedLabel, onSpeed),
         HubTile(Icons.Rounded.ContentCopy, "Find duplicates", "Free up space", onDuplicates),
         HubTile(Icons.Rounded.Refresh, "Rescan library", if (scanning) "Scanning…" else "Look for new songs", onRescan),
     )
