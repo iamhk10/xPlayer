@@ -1,11 +1,13 @@
 package com.x.player.ui.theme
 
 import android.app.Activity
+import android.graphics.Typeface
 import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -23,12 +25,16 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.times
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.WindowCompat
 import com.x.player.data.AppSettings
+import com.x.player.data.FontOption
 import com.x.player.data.ThemeMode
 
 /** Accent colours offered on the Theme screen. */
@@ -43,6 +49,40 @@ val ACCENTS = listOf(
     AccentOption("Orange", Color(0xFFFFA14A)),
     AccentOption("Red", Color(0xFFFF6B6B)),
 )
+
+/** Font family for a font style choice. Uses fonts every Android phone already has. */
+fun fontFamilyFor(option: FontOption): FontFamily = when (option) {
+    FontOption.DEFAULT -> FontFamily.Default
+    FontOption.CONDENSED -> FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL))
+    FontOption.LIGHT -> FontFamily(Typeface.create("sans-serif-light", Typeface.NORMAL))
+    FontOption.SERIF -> FontFamily.Serif
+    FontOption.CASUAL -> FontFamily(Typeface.create("casual", Typeface.NORMAL))
+    FontOption.CURSIVE -> FontFamily.Cursive
+    FontOption.MONO -> FontFamily.Monospace
+}
+
+private fun buildTypography(family: FontFamily, scale: Float): Typography {
+    val base = Typography()
+    fun TextStyle.styled(): TextStyle =
+        copy(fontFamily = family, fontSize = fontSize * scale, lineHeight = lineHeight * scale)
+    return Typography(
+        displayLarge = base.displayLarge.styled(),
+        displayMedium = base.displayMedium.styled(),
+        displaySmall = base.displaySmall.styled(),
+        headlineLarge = base.headlineLarge.styled(),
+        headlineMedium = base.headlineMedium.styled(),
+        headlineSmall = base.headlineSmall.styled(),
+        titleLarge = base.titleLarge.styled(),
+        titleMedium = base.titleMedium.styled(),
+        titleSmall = base.titleSmall.styled(),
+        bodyLarge = base.bodyLarge.styled(),
+        bodyMedium = base.bodyMedium.styled(),
+        bodySmall = base.bodySmall.styled(),
+        labelLarge = base.labelLarge.styled(),
+        labelMedium = base.labelMedium.styled(),
+        labelSmall = base.labelSmall.styled(),
+    )
+}
 
 /** True when the app is currently drawn with a dark colour scheme. */
 val LocalIsDark = staticCompositionLocalOf { true }
@@ -177,15 +217,19 @@ fun XTheme(
         }
     }
 
+    val typography = remember(settings.fontOption, settings.textSize) {
+        buildTypography(fontFamilyFor(settings.fontOption), settings.textSize.scale)
+    }
+
     CompositionLocalProvider(
         LocalIsDark provides dark,
         LocalGlass provides settings.glass,
     ) {
-        MaterialTheme(
-            colorScheme = scheme,
-            typography = Typography(),
-            content = content,
-        )
+        MaterialTheme(colorScheme = scheme, typography = typography) {
+            // Text and icons outside a Surface or Scaffold default to black. Setting the content colour
+            // here makes every screen follow the theme (light, dark, AMOLED, wallpaper colours).
+            CompositionLocalProvider(LocalContentColor provides scheme.onBackground, content = content)
+        }
     }
 }
 
