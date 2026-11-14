@@ -24,15 +24,15 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
+      - name: Build release APK
+        run: gradle assembleRelease --stacktrace
 
       - name: Name the APK xPlayer.apk
-        run: cp "$(ls app/build/outputs/apk/debug/*.apk | head -n 1)" xPlayer.apk
+        run: cp "$(ls app/build/outputs/apk/release/*.apk | head -n 1)" xPlayer.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: xPlayer-debug-apk
+          name: xPlayer-apk
           path: xPlayer.apk
           if-no-files-found: error
