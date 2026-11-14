@@ -167,6 +167,7 @@ class PlayerController(
             durationMs = duration.coerceAtLeast(0L),
             shuffle = c.shuffleModeEnabled,
             repeat = c.repeatMode,
+            speed = c.playbackParameters.speed,
         )
     }
 
@@ -276,6 +277,8 @@ class PlayerController(
         sleepEndOfSong = false
         _sleep.value = null
     }
+
+    fun setSpeed(speed: Float) = withController { it.setPlaybackSpeed(speed) }
 
     fun toggleShuffle() = withController { it.shuffleModeEnabled = !it.shuffleModeEnabled }
 

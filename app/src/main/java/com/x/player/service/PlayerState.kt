@@ -13,6 +13,7 @@ data class PlayerState(
     val durationMs: Long = 0L,
     val shuffle: Boolean = false,
     val repeat: Int = Player.REPEAT_MODE_OFF,
+    val speed: Float = 1f,
 ) {
     val hasMedia: Boolean get() = current != null
     val currentId: String? get() = current?.mediaId
