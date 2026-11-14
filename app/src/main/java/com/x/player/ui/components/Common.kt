@@ -1,5 +1,6 @@
 package com.x.player.ui.components
 
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -44,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -90,6 +93,20 @@ class TrackMenu(
     val onAddToPlaylist: (Track) -> Unit,
 )
 
+private fun shareTrack(context: android.content.Context, track: Track) {
+    try {
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "audio/*"
+            putExtra(Intent.EXTRA_STREAM, track.uri)
+            putExtra(Intent.EXTRA_TITLE, track.title)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(send, "Share song"))
+    } catch (e: Exception) {
+        // No app can take it; nothing to do.
+    }
+}
+
 @Composable
 fun TrackRow(
     track: Track,
@@ -106,6 +123,7 @@ fun TrackRow(
     val favorite = track.id in menu.favorites
     var menuOpen by remember { mutableStateOf(false) }
     val accent = MaterialTheme.colorScheme.primary
+    val context = LocalContext.current
     val cardShape = RoundedCornerShape(18.dp)
     val cardLook = if (card) {
         Modifier
@@ -175,6 +193,11 @@ fun TrackRow(
                     text = { Text("Add to playlist") },
                     leadingIcon = { Icon(Icons.Rounded.LibraryMusic, contentDescription = null) },
                     onClick = { menuOpen = false; menu.onAddToPlaylist(track) },
+                )
+                DropdownMenuItem(
+                    text = { Text("Share") },
+                    leadingIcon = { Icon(Icons.Rounded.Share, contentDescription = null) },
+                    onClick = { menuOpen = false; shareTrack(context, track) },
                 )
                 if (onRemove != null) {
                     DropdownMenuItem(

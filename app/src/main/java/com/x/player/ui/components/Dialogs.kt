@@ -171,3 +171,37 @@ fun SleepTimerDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
 }
+
+private val SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
+
+fun speedLabel(speed: Float): String = if (speed == 1f) "Normal" else "${speed}x"
+
+@Composable
+fun SpeedDialog(
+    current: Float,
+    onPick: (Float) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Playback speed") },
+        text = {
+            Column {
+                SPEEDS.forEach { speed ->
+                    val selected = kotlin.math.abs(speed - current) < 0.01f
+                    Text(
+                        speedLabel(speed),
+                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Bold else null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPick(speed) }
+                            .padding(vertical = 12.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+    )
+}
