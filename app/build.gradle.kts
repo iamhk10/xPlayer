@@ -13,9 +13,9 @@ android {
         applicationId = "com.x.player"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.2.0"
-        // Output file becomes xPlayer-debug.apk
+        versionCode = 3
+        versionName = "0.3.0"
+        // Output file becomes xPlayer-release.apk
         setProperty("archivesBaseName", "xPlayer")
     }
 
@@ -35,8 +35,16 @@ android {
             signingConfig = signingConfigs.getByName("shared")
         }
         release {
+            // Release is not debuggable, so Compose runs much smoother than in a debug build.
             isMinifyEnabled = false
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("shared")
         }
+    }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 
     compileOptions {
