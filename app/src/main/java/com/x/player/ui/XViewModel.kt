@@ -55,10 +55,10 @@ class XViewModel(private val repository: LibraryRepository) : ViewModel() {
         viewModelScope.launch { repository.toggleFavorite(trackId) }
     }
 
-    fun createPlaylist(name: String, firstTrackId: Long? = null) {
+    fun createPlaylist(name: String, firstTrackId: Long? = null, kind: Int = 0) {
         val clean = name.trim()
         if (clean.isEmpty()) return
-        viewModelScope.launch { repository.createPlaylist(clean, firstTrackId) }
+        viewModelScope.launch { repository.createPlaylist(clean, firstTrackId, kind) }
     }
 
     fun renamePlaylist(id: Long, name: String) {
@@ -80,6 +80,9 @@ class XViewModel(private val repository: LibraryRepository) : ViewModel() {
     }
 
     val topTracks: StateFlow<List<TopRow>> = repository.topTracks()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val recentIds: StateFlow<List<Long>> = repository.recentIds()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun statsSince(since: Long): Flow<StatsRow> = repository.statsSince(since)
