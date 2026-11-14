@@ -3,29 +3,101 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07060d">
 <title>xPlayer – Download</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Russo+One&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:dark}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0B0B12;
- background-image:radial-gradient(circle at 50% 0%,rgba(182,156,255,.35),transparent 65%);
- font-family:system-ui,-apple-system,Roboto,Arial,sans-serif;color:#EDEAF3;padding:24px}
-.card{width:100%;max-width:380px;text-align:center}
-img{width:132px;height:132px;border-radius:30px;box-shadow:0 14px 40px rgba(0,0,0,.6)}
-h1{margin:20px 0 4px;font-size:30px}
-p{margin:0;color:#B9B5C6;line-height:1.5}
-a.btn{display:block;margin-top:28px;padding:16px;border-radius:30px;background:#B69CFF;color:#1B1530;font-weight:700;font-size:17px;text-decoration:none}
-a.btn:active{transform:scale(.98)}
-small{display:block;margin-top:16px;color:#8d89a0;font-size:12px;line-height:1.5}
+:root{--a:#B69CFF;--b:#ff6fb5;--c:#3dd6c6;--bg:#07060d;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{background:var(--bg);color:#EDEAF3;font-family:Poppins,system-ui,-apple-system,Roboto,Arial,sans-serif;
+ display:flex;align-items:center;justify-content:center;padding:28px 20px;overflow-x:hidden;min-height:100vh}
+
+/* aurora background */
+.aurora{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.aurora i{position:absolute;border-radius:50%;filter:blur(80px);opacity:.55;animation:float 16s ease-in-out infinite}
+.aurora i:nth-child(1){width:420px;height:420px;background:var(--a);top:-120px;left:-100px}
+.aurora i:nth-child(2){width:360px;height:360px;background:var(--b);bottom:-100px;right:-80px;animation-delay:-5s}
+.aurora i:nth-child(3){width:300px;height:300px;background:var(--c);top:40%;left:55%;opacity:.3;animation-delay:-9s}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-30px) scale(1.15)}}
+
+/* card */
+.card{width:100%;max-width:400px;text-align:center;padding:34px 26px 26px;border-radius:34px;position:relative;
+ background:linear-gradient(160deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
+ border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+ box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.25);animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(30px) scale(.97)}to{opacity:1;transform:none}}
+
+/* icon */
+.icon{position:relative;width:138px;height:138px;margin:0 auto;animation:bob 4.5s ease-in-out infinite}
+.icon:before{content:"";position:absolute;inset:-12px;border-radius:44px;
+ background:conic-gradient(from 0deg,var(--a),var(--b),var(--c),var(--a));filter:blur(18px);opacity:.75;animation:spin 6s linear infinite}
+.icon img{position:relative;width:100%;height:100%;border-radius:32px;display:block;box-shadow:0 12px 34px rgba(0,0,0,.6)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* equalizer bars */
+.eq{display:flex;justify-content:center;align-items:flex-end;gap:5px;height:28px;margin:22px 0 4px}
+.eq b{width:5px;border-radius:3px;background:linear-gradient(var(--a),var(--b));animation:bar 1.1s ease-in-out infinite}
+.eq b:nth-child(1){animation-delay:-.9s}.eq b:nth-child(2){animation-delay:-.7s}.eq b:nth-child(3){animation-delay:-.5s}
+.eq b:nth-child(4){animation-delay:-.3s}.eq b:nth-child(5){animation-delay:-.1s}.eq b:nth-child(6){animation-delay:-.6s}.eq b:nth-child(7){animation-delay:-.4s}
+@keyframes bar{0%,100%{height:6px}50%{height:28px}}
+
+h1{font-family:Orbitron,Poppins,sans-serif;font-weight:900;font-size:40px;letter-spacing:2px;margin-top:6px;
+ background:linear-gradient(100deg,var(--a),var(--b),var(--c),var(--a));background-size:300% 100%;
+ -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
+@keyframes shine{to{background-position:300% 0}}
+.tag{margin-top:8px;color:#B9B5C6;font-size:14.5px;line-height:1.6}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+.chips span{font-size:12px;font-weight:500;padding:6px 12px;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#d9d4ea}
+
+/* button */
+.btn{position:relative;display:block;margin-top:26px;padding:17px;border-radius:32px;text-decoration:none;overflow:hidden;
+ background:linear-gradient(120deg,var(--a),#d9c9ff);color:#1B1530;font-weight:600;font-size:17px;letter-spacing:.3px;
+ box-shadow:0 10px 30px rgba(182,156,255,.45);transition:transform .2s,box-shadow .2s;animation:pulse 2.6s ease-in-out infinite}
+.btn:before{content:"";position:absolute;top:0;left:-70%;width:50%;height:100%;transform:skewX(-20deg);
+ background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);animation:sweep 3.2s ease-in-out infinite}
+.btn:active{transform:scale(.97)}
+@keyframes sweep{0%{left:-70%}60%,100%{left:130%}}
+@keyframes pulse{0%,100%{box-shadow:0 10px 30px rgba(182,156,255,.4)}50%{box-shadow:0 10px 44px rgba(255,111,181,.55)}}
+.note{margin-top:14px;font-size:12px;color:#8d89a0;line-height:1.55}
+
+/* developer */
+.dev{margin-top:26px;padding-top:20px;border-top:1px solid rgba(255,255,255,.12)}
+.dev small{display:block;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#8d89a0}
+.dev .name{display:inline-block;margin-top:8px;font-family:'Russo One',Orbitron,sans-serif;font-size:28px;letter-spacing:6px;position:relative;
+ background:linear-gradient(90deg,#fff,var(--a),var(--b),var(--c),#fff);background-size:300% 100%;
+ -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 4s linear infinite}
+.dev .name:before,.dev .name:after{content:attr(data-t);position:absolute;left:0;top:0;width:100%;
+ background:none;-webkit-background-clip:border-box;background-clip:border-box;opacity:.0}
+.dev .name:before{color:var(--b);animation:glitch1 5s infinite}
+.dev .name:after{color:var(--c);animation:glitch2 5s infinite}
+@keyframes glitch1{0%,90%,100%{opacity:0;transform:none}92%{opacity:.8;transform:translate(-3px,1px)}95%{opacity:.8;transform:translate(3px,-1px)}}
+@keyframes glitch2{0%,91%,100%{opacity:0;transform:none}93%{opacity:.8;transform:translate(3px,-1px)}96%{opacity:.8;transform:translate(-3px,1px)}}
+.dev .line{width:60px;height:3px;border-radius:2px;margin:12px auto 0;background:linear-gradient(90deg,var(--a),var(--b));animation:grow 3s ease-in-out infinite}
+@keyframes grow{0%,100%{width:30px}50%{width:90px}}
+
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important}}
 </style>
 </head>
 <body>
-<div class="card">
-  <img src="icon.png" alt="xPlayer icon">
+<div class="aurora"><i></i><i></i><i></i></div>
+<main class="card">
+  <div class="icon"><img src="icon.png" alt="xPlayer icon"></div>
+  <div class="eq" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div>
   <h1>xPlayer</h1>
-  <p>Offline music player for Android. Plays the music already on your phone.</p>
+  <p class="tag">Offline music player for Android.<br>Plays the music already on your phone.</p>
+  <div class="chips"><span>100% Offline</span><span>No Ads</span><span>5-band Equalizer</span><span>Synced Lyrics</span><span>Liquid Glass</span></div>
   <a class="btn" href="https://github.com/iamhk10/xPlayer/releases/latest/download/xPlayer.apk">Download APK</a>
-  <small>After downloading, open the file and allow “Install unknown apps” if Android asks.</small>
-</div>
+  <p class="note">After downloading, open the file and allow “Install unknown apps” if Android asks.</p>
+  <div class="dev">
+    <small>Developed by</small>
+    <div class="name" data-t="ΣTΣЯПITY">ΣTΣЯПITY</div>
+    <div class="line"></div>
+  </div>
+</main>
 </body>
 </html>
