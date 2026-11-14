@@ -32,7 +32,7 @@ class LibraryRepository(
     val playlists: Flow<List<Playlist>> =
         combine(pdao.observePlaylists(), pdao.observePlaylistTracks()) { lists, links ->
             val grouped = links.groupBy({ it.playlistId }, { it.trackId })
-            lists.map { Playlist(it.id, it.name, grouped[it.id].orEmpty()) }
+            lists.map { Playlist(it.id, it.name, grouped[it.id].orEmpty(), it.kind) }
         }
 
     /** Re-reads MediaStore and syncs the Room cache. Returns the number of tracks found. */
@@ -59,6 +59,8 @@ class LibraryRepository(
 
     fun topTracks(): Flow<List<TopRow>> = logDao.observeTop()
 
+    fun recentIds(): Flow<List<Long>> = logDao.observeRecent()
+
     suspend fun toggleFavorite(trackId: Long) {
         if (pdao.favoriteCount(trackId) > 0) {
             pdao.removeFavorite(trackId)
@@ -67,8 +69,8 @@ class LibraryRepository(
         }
     }
 
-    suspend fun createPlaylist(name: String, firstTrackId: Long?): Long {
-        val id = pdao.insertPlaylist(PlaylistEntity(name = name, createdAt = System.currentTimeMillis()))
+    suspend fun createPlaylist(name: String, firstTrackId: Long?, kind: Int = 0): Long {
+        val id = pdao.insertPlaylist(PlaylistEntity(name = name, createdAt = System.currentTimeMillis(), kind = kind))
         if (firstTrackId != null) {
             pdao.addToPlaylist(PlaylistTrackEntity(id, firstTrackId, System.currentTimeMillis()))
         }
