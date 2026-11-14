@@ -35,6 +35,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -77,6 +78,8 @@ import com.x.player.ui.components.MiniPlayer
 import com.x.player.ui.components.NAV_BAR_HEIGHT
 import com.x.player.ui.components.NameDialog
 import com.x.player.ui.components.SleepTimerDialog
+import com.x.player.ui.components.SpeedDialog
+import com.x.player.ui.components.speedLabel
 import com.x.player.ui.components.TrackMenu
 import com.x.player.ui.components.rememberArtworkColor
 import com.x.player.ui.screens.AboutScreen
@@ -201,10 +204,11 @@ private fun AppHost(
     val sleep by player.sleep.collectAsState()
     val route = nav.currentBackStackEntryAsState().value?.destination?.route
 
-    var mainTab by rememberSaveable { mutableIntStateOf(0) }
+    var mainTab by rememberSaveable { mutableIntStateOf(settings.startTab) }
     var addTarget by remember { mutableStateOf<Track?>(null) }
     var pendingNew by remember { mutableStateOf<PendingNew?>(null) }
     var showSleep by remember { mutableStateOf(false) }
+    var showSpeed by remember { mutableStateOf(false) }
 
     val favoriteSet = remember(favoriteIds) { favoriteIds.toSet() }
     val menu = remember(favoriteSet) {
@@ -416,6 +420,7 @@ private fun AppHost(
                         deviceFolderCount = index.folders.size,
                         folders = folders,
                         sleepActive = sleep != null,
+                        speedLabel = speedLabel(state.speed),
                         scanning = scanning,
                         onBack = { nav.popBackStack() },
                         onFavorites = { nav.navigate("playlist/$FAVORITES_ID") },
@@ -427,6 +432,7 @@ private fun AppHost(
                         onStats = { nav.navigate("stats") },
                         onEqualizer = { nav.navigate("eq") },
                         onSleep = { showSleep = true },
+                        onSpeed = { showSpeed = true },
                         onDuplicates = { nav.navigate("duplicates") },
                         onRescan = vm::rescan,
                     )
@@ -443,12 +449,14 @@ private fun AppHost(
                         settings = settings,
                         trackCount = index.tracks.size,
                         scanning = scanning,
+                        speedLabel = speedLabel(state.speed),
                         onChange = container.settings::update,
                         onBack = { nav.popBackStack() },
                         onTheme = { nav.navigate("theme") },
                         onStats = { nav.navigate("stats") },
                         onEqualizer = { nav.navigate("eq") },
                         onSleep = { showSleep = true },
+                        onSpeed = { showSpeed = true },
                         onDuplicates = { nav.navigate("duplicates") },
                         onRescan = vm::rescan,
                         onAbout = { nav.navigate("about") },
@@ -468,6 +476,7 @@ private fun AppHost(
                     popEnterTransition = { slideInVertically(tween(300)) { it } },
                     popExitTransition = { slideOutVertically(tween(260)) { it } },
                 ) {
+                    CompositionLocalProvider(LocalContentColor provides Color.White) {
                     NowPlayingScreen(
                         state = state,
                         player = player,
@@ -482,7 +491,9 @@ private fun AppHost(
                         onQueue = { nav.navigate("queue") },
                         onEqualizer = { nav.navigate("eq") },
                         lyrics = container.lyrics,
+                        keepScreenOn = settings.keepScreenOn,
                     )
+                    }
                 }
                 composable("duplicates") {
                     val groups = remember(index) { findDuplicates(index.tracks) }
@@ -552,6 +563,13 @@ private fun AppHost(
             confirmLabel = "Create",
             onConfirm = { vm.createPlaylist(it, request.track?.id, request.kind); pendingNew = null },
             onDismiss = { pendingNew = null },
+        )
+    }
+    if (showSpeed) {
+        SpeedDialog(
+            current = state.speed,
+            onPick = { player.setSpeed(it); showSpeed = false },
+            onDismiss = { showSpeed = false },
         )
     }
     if (showSleep) {
