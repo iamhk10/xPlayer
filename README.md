@@ -13,7 +13,7 @@ Kotlin + Jetpack Compose (Material 3) music player. Plays only the music on your
 1. Create a new empty GitHub repo.
 2. Push this folder to it (branch `main`).
 3. Open the repo → **Actions** → *Build xPlayer APK* (it also runs on every push).
-4. When it is green, open the run and download the artifact **xPlayer-debug-apk** → unzip → `xPlayer.apk`.
+4. When it is green, open the run and download the artifact **xPlayer-apk** → unzip → `xPlayer.apk`.
 5. Copy `xPlayer.apk` to your phone and install it (allow "install unknown apps").
 
 If the build fails, open the failed step, copy the red error lines and send them back.
