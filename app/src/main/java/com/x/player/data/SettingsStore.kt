@@ -12,6 +12,23 @@ enum class ThemeMode(val label: String) {
     AMOLED("AMOLED black"),
 }
 
+enum class FontOption(val label: String) {
+    DEFAULT("Default"),
+    CONDENSED("Condensed"),
+    LIGHT("Light"),
+    SERIF("Serif"),
+    CASUAL("Casual"),
+    CURSIVE("Cursive"),
+    MONO("Mono"),
+}
+
+enum class TextSize(val label: String, val scale: Float) {
+    SMALL("Small", 0.9f),
+    NORMAL("Normal", 1f),
+    LARGE("Large", 1.12f),
+    HUGE("Huge", 1.25f),
+}
+
 /** Everything the user can change in Settings and Theme. Immutable; replaced as a whole on change. */
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.DARK,
@@ -29,6 +46,12 @@ data class AppSettings(
     val showPlaylists: Boolean = true,
     val showAlbums: Boolean = true,
     val showArtists: Boolean = true,
+    val fontOption: FontOption = FontOption.DEFAULT,
+    val textSize: TextSize = TextSize.NORMAL,
+    /** Which tab opens first (index into the nav bar). */
+    val startTab: Int = 0,
+    /** Keep the display awake on the Now Playing screen. */
+    val keepScreenOn: Boolean = false,
 )
 
 /** Small SharedPreferences-backed store. Reads are in-memory through [settings]. */
@@ -41,6 +64,8 @@ class SettingsStore(context: Context) {
     private fun load(): AppSettings {
         val d = AppSettings()
         val mode = prefs.getString("themeMode", d.themeMode.name)
+        val font = prefs.getString("fontOption", d.fontOption.name)
+        val size = prefs.getString("textSize", d.textSize.name)
         return AppSettings(
             themeMode = ThemeMode.values().firstOrNull { it.name == mode } ?: d.themeMode,
             dynamicColor = prefs.getBoolean("dynamicColor", d.dynamicColor),
@@ -53,6 +78,10 @@ class SettingsStore(context: Context) {
             showPlaylists = prefs.getBoolean("showPlaylists", d.showPlaylists),
             showAlbums = prefs.getBoolean("showAlbums", d.showAlbums),
             showArtists = prefs.getBoolean("showArtists", d.showArtists),
+            fontOption = FontOption.values().firstOrNull { it.name == font } ?: d.fontOption,
+            textSize = TextSize.values().firstOrNull { it.name == size } ?: d.textSize,
+            startTab = prefs.getInt("startTab", d.startTab).coerceIn(0, 4),
+            keepScreenOn = prefs.getBoolean("keepScreenOn", d.keepScreenOn),
         )
     }
 
@@ -71,6 +100,10 @@ class SettingsStore(context: Context) {
             .putBoolean("showPlaylists", s.showPlaylists)
             .putBoolean("showAlbums", s.showAlbums)
             .putBoolean("showArtists", s.showArtists)
+            .putString("fontOption", s.fontOption.name)
+            .putString("textSize", s.textSize.name)
+            .putInt("startTab", s.startTab)
+            .putBoolean("keepScreenOn", s.keepScreenOn)
             .apply()
     }
 }
